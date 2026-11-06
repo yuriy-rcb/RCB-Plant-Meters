@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RCB Plant Meters</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1a2332;
+    --muted: #5b6b7c;
+    --border: #d8e0ea;
+    --red: #d64545;
+    --amber: #d4a017;
+    --green: #2f9e6b;
+    --hub: #1a2332;
+    --needle: #1a2332;
+    --ring-track: #e8eef5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1419;
+      --card: #1a222c;
+      --text: #e8eef5;
+      --muted: #9aabbc;
+      --border: #2a3544;
+      --hub: #e8eef5;
+      --needle: #e8eef5;
+      --ring-track: #243040;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 16px 14px 40px;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  header .sub {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .err {
+    display: none;
+    background: #fdecea;
+    color: #8a1f1f;
+    border: 1px solid #f5c2c0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 0.92rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    .err { background: #3a1a1a; color: #ffb4b0; border-color: #6a3030; }
+  }
+  .section-label {
+    margin: 22px 0 10px;
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card.plant { padding: 16px 16px 14px; }
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 2px;
+  }
+  .card-head h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .card.plant .card-head h2 { font-size: 1.2rem; }
+  .status {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .status.urgent { color: var(--red); }
+  .status.watch { color: var(--amber); }
+  .status.ontrack { color: var(--green); }
+  .gauge-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 2px 0 4px;
+  }
+  .gauge-wrap svg { width: 100%; max-width: 320px; height: auto; }
+  .card.plant .gauge-wrap svg { max-width: 380px; }
+  .pct-label {
+    font-size: 36px;
+    font-weight: 750;
+    fill: var(--text);
+  }
+  .tick-label {
+    font-size: 11px;
+    fill: var(--muted);
+    font-weight: 560;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    margin-top: 6px;
+  }
+  .card.plant .stats { grid-template-columns: 1fr 1fr 1fr; }
+  .stat {
+    background: transparent;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+  }
+  .stat .k {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .stat .v {
+    display: block;
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .stat .v.ot-red { color: var(--red); }
+  .stat .v.ot-amber { color: var(--amber); }
+  .stat .v.ot-green { color: var(--green); }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    .card.plant .stats { grid-template-columns: 1fr 1fr; }
+  }
+  footer {
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+  .loading { color: var(--muted); font-size: 0.92rem; padding: 24px 0; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>RCB Plant Meters</h1>
+      <p class="sub" id="subtitle">Loading…</p>
+    </header>
+    <div class="err" id="err"></div>
+    <div id="app"><div class="loading">Loading plant data…</div></div>
+    <footer id="footer"></footer>
+  </div>
+<script>
+(function () {
+  var SHEET_ID = "1vY-wDFdlPpT7i9lvd8PHNHJtCz8AptODe0RFnjnPZm8";
+  var GVIZ_URL =
+    "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+    "/gviz/tq?sheet=Plant&tqx=responseHandler:onPlant";
+  var REFRESH_MS = 5 * 60 * 1000;
+  var CX = 160, CY = 150, R_OUT = 124, R_IN = 98;
+  var TARGET = 0.85;
+
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+  function polar(cx, cy, r, t) {
+    // t: 0 at left (π), 1 at right (0) — top semicircle
+    var ang = Math.PI * (1 - t);
+    return { x: cx + r * Math.cos(ang), y: cy - r * Math.sin(ang) };
+  }
+
+  function ringSector(t0, t1) {
+    t0 = clamp(t0, 0, 1); t1 = clamp(t1, 0, 1);
+    if (t1 <= t0) return "";
+    var o0 = polar(CX, CY, R_OUT, t0);
+    var o1 = polar(CX, CY, R_OUT, t1);
+    var i1 = polar(CX, CY, R_IN, t1);
+    var i0 = polar(CX, CY, R_IN, t0);
+    // t is fraction of semicircle; angle = t*180°. Our bands max 108° so large-arc=0
+    return [
+      "M", o0.x, o0.y,
+      "A", R_OUT, R_OUT, 0, 0, 1, o1.x, o1.y,
+      "L", i1.x, i1.y,
+      "A", R_IN, R_IN, 0, 0, 0, i0.x, i0.y,
+      "Z"
+    ].join(" ");
+  }
+
+  function cellVal(c) {
+    if (!c) return null;
+    if (c.v !== null && c.v !== undefined) return c.v;
+    if (c.f !== null && c.f !== undefined) return c.f;
+    return null;
+  }
+
+  function asNumber(v) {
+    if (typeof v === "number" && isFinite(v)) return v;
+    if (typeof v === "string") {
+      var s = v.replace(/[%,$\s]/g, "").replace(/,/g, "");
+      var n = parseFloat(s);
+      return isFinite(n) ? n : null;
+    }
+    return null;
+  }
+
+  function asFraction(v) {
+    var n = asNumber(v);
+    if (n === null) return null;
+    // percentages in gviz .v are fractions; .f like "38%" would parse as 38
+    if (typeof v === "string" && v.indexOf("%") >= 0 && n > 1) return n / 100;
+    if (n > 1.5) return n / 100; // defensive
+    return n;
+  }
+
+  function fmtInt(n) {
+    if (n === null || n === undefined || !isFinite(n)) return "—";
+    return Math.round(n).toLocaleString("en-US");
+  }
+
+  function fmtHrs(n) {
+    if (n === null || n === undefined || !isFinite(n)) return "—";
+    return (Math.round(n * 10) / 10).toLocaleString("en-US", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    });
+  }
+
+  function fmtPct(frac) {
+    if (frac === null || frac === undefined || !isFinite(frac)) return "—";
+    return Math.round(frac * 100) + "%";
+  }
+
+  function statusClass(s) {
+    s = String(s || "").toUpperCase();
+    if (s.indexOf("URGENT") >= 0) return "urgent";
+    if (s.indexOf("WATCH") >= 0) return "watch";
+    if (s.indexOf("ON TRACK") >= 0 || s.indexOf("ONTRACK") >= 0) return "ontrack";
+    return "";
+  }
+
+  function otClass(frac) {
+    if (frac === null || !isFinite(frac)) return "";
+    if (frac < 0.8) return "ot-red";
+    if (frac < 0.95) return "ot-amber";
+    return "ot-green";
+  }
+
+  function parsePlant(resp) {
+    if (!resp || resp.status !== "ok" || !resp.table) {
+      throw new Error("Sheet response was not ok");
+    }
+    var cols = resp.table.cols || [];
+    var week = "";
+    for (var i = 0; i < cols.length; i++) {
+      var lab = cols[i].label || "";
+      var m = lab.match(/Week of[^]*?(?=\s*Status|$)/i);
+      if (m) { week = m[0].replace(/\s+Status\s*$/i, "").trim(); break; }
+      m = lab.match(/Week of .+/i);
+      if (m) { week = m[0].replace(/\s+Status\s*$/i, "").trim(); break; }
+    }
+
+    var rows = resp.table.rows || [];
+    var depts = [];
+    var plant = null;
+    for (var r = 0; r < rows.length; r++) {
+      var c = rows[r].c || [];
+      var dept = cellVal(c[0]);
+      if (dept === null || dept === "") continue;
+      var name = String(dept);
+      var rec = {
+        dept: name,
+        status: String(cellVal(c[1]) || ""),
+        eff: asFraction(cellVal(c[2])),
+        ontime: asFraction(cellVal(c[3])),
+        produced: asNumber(cellVal(c[4])),
+        capacity: asNumber(cellVal(c[5])),
+        gap: asNumber(cellVal(c[6])),
+        paid: asNumber(cellVal(c[7])),
+        logged: asNumber(cellVal(c[8]))
+      };
+      if (/^PLANT\s*TOTAL$/i.test(name)) plant = rec;
+      else depts.push(rec);
+    }
+    if (!plant) throw new Error("PLANT TOTAL row not found");
+    depts.sort(function (a, b) {
+      var ae = a.eff == null ? 999 : a.eff;
+      var be = b.eff == null ? 999 : b.eff;
+      return ae - be;
+    });
+    return { week: week, plant: plant, depts: depts };
+  }
+
+  // Expose for node sanity check
+  window.__parsePlant = parsePlant;
+  window.__ringSector = ringSector;
+
+  function gaugeSvg(eff, large) {
+    var e = clamp(eff == null ? 0 : eff, 0, 1);
+    var red = ringSector(0, 0.6);
+    var amber = ringSector(0.6, 0.85);
+    var green = ringSector(0.85, 1);
+    var tip = polar(CX, CY, (R_OUT + R_IN) / 2, e);
+    var tickOuter = polar(CX, CY, R_OUT + 2, TARGET);
+    var tickInner = polar(CX, CY, R_IN - 2, TARGET);
+    var t0 = polar(CX, CY, R_OUT + 10, 0);
+    var t50 = polar(CX, CY, R_OUT + 10, 0.5);
+    var t100 = polar(CX, CY, R_OUT + 10, 1);
+    var pctY = CY - 28;
+    var fontSize = large ? 42 : 36;
+
+    return (
+      '<svg viewBox="0 0 320 178" role="img" aria-label="Efficiency ' + fmtPct(e) + '">' +
+        '<path d="' + ringSector(0, 0.5) + '" fill="var(--ring-track)" />' +
+        '<path d="' + ringSector(0.5, 1) + '" fill="var(--ring-track)" />' +
+        '<path d="' + red + '" fill="var(--red)" />' +
+        '<path d="' + amber + '" fill="var(--amber)" />' +
+        '<path d="' + green + '" fill="var(--green)" />' +
+        '<line x1="' + tickInner.x + '" y1="' + tickInner.y +
+          '" x2="' + tickOuter.x + '" y2="' + tickOuter.y +
+          '" stroke="var(--hub)" stroke-width="3" stroke-linecap="round" />' +
+        '<line x1="' + CX + '" y1="' + CY +
+          '" x2="' + tip.x + '" y2="' + tip.y +
+          '" stroke="var(--needle)" stroke-width="3.5" stroke-linecap="round" />' +
+        '<circle cx="' + CX + '" cy="' + CY + '" r="7" fill="var(--hub)" />' +
+        '<circle cx="' + CX + '" cy="' + CY + '" r="3.2" fill="var(--card)" />' +
+        '<text class="pct-label" x="' + CX + '" y="' + pctY +
+          '" text-anchor="middle" style="font-size:' + fontSize + 'px">' +
+          fmtPct(e) + "</text>" +
+        '<text class="tick-label" x="' + t0.x + '" y="' + (t0.y + 4) + '" text-anchor="middle">0</text>' +
+        '<text class="tick-label" x="' + t50.x + '" y="' + (t50.y + 2) + '" text-anchor="middle">50</text>' +
+        '<text class="tick-label" x="' + t100.x + '" y="' + (t100.y + 4) + '" text-anchor="middle">100</text>' +
+      "</svg>"
+    );
+  }
+
+  function statsHtml(rec, plant) {
+    var cols = plant ? "plant" : "";
+    return (
+      '<div class="stats ' + cols + '">' +
+        '<div class="stat"><span class="k">On-time</span><span class="v ' +
+          otClass(rec.ontime) + '">' + fmtPct(rec.ontime) + "</span></div>" +
+        '<div class="stat"><span class="k">Cap gap</span><span class="v">' +
+          fmtInt(rec.gap) + "</span></div>" +
+        '<div class="stat"><span class="k">Produced</span><span class="v">' +
+          fmtInt(rec.produced) + "</span></div>" +
+        '<div class="stat"><span class="k">Capacity</span><span class="v">' +
+          fmtInt(rec.capacity) + "</span></div>" +
+        '<div class="stat"><span class="k">Paid hrs</span><span class="v">' +
+          fmtHrs(rec.paid) + "</span></div>" +
+        '<div class="stat"><span class="k">Logged hrs</span><span class="v">' +
+          fmtHrs(rec.logged) + "</span></div>" +
+      "</div>"
+    );
+  }
+
+  function cardHtml(rec, isPlant) {
+    var sc = statusClass(rec.status);
+    return (
+      '<article class="card' + (isPlant ? " plant" : "") + '">' +
+        '<div class="card-head">' +
+          "<h2>" + escapeHtml(rec.dept) + "</h2>" +
+          '<span class="status ' + sc + '">' + escapeHtml(rec.status) + "</span>" +
+        "</div>" +
+        '<div class="gauge-wrap">' + gaugeSvg(rec.eff, isPlant) + "</div>" +
+        statsHtml(rec, isPlant) +
+      "</article>"
+    );
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function render(data) {
+    var sub = document.getElementById("subtitle");
+    sub.textContent = data.week || "Plant efficiency";
+    var html = cardHtml(data.plant, true);
+    html += '<div class="section-label">Departments</div>';
+    html += '<div class="grid">';
+    for (var i = 0; i < data.depts.length; i++) {
+      html += cardHtml(data.depts[i], false);
+    }
+    html += "</div>";
+    document.getElementById("app").innerHTML = html;
+    var now = new Date();
+    document.getElementById("footer").textContent =
+      "Updated " + now.toLocaleString(undefined, {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+      }) +
+      " · Live from Plant sheet · Auto-refreshes every 5 min";
+  }
+
+  function showError(msg) {
+    var el = document.getElementById("err");
+    el.style.display = "block";
+    el.textContent = msg;
+    document.getElementById("app").innerHTML = "";
+    document.getElementById("subtitle").textContent = "";
+  }
+
+  function clearError() {
+    var el = document.getElementById("err");
+    el.style.display = "none";
+    el.textContent = "";
+  }
+
+  var loadTimer = null;
+  var scriptEl = null;
+
+  window.onPlant = function (resp) {
+    try {
+      clearError();
+      var data = parsePlant(resp);
+      render(data);
+    } catch (e) {
+      showError("Could not read the Plant sheet: " + (e && e.message ? e.message : e));
+    } finally {
+      if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+      scriptEl = null;
+    }
+  };
+
+  function load() {
+    if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+    scriptEl = document.createElement("script");
+    scriptEl.async = true;
+    scriptEl.src = GVIZ_URL + "&_=" + Date.now();
+    scriptEl.onerror = function () {
+      showError(
+        "Could not load the Plant sheet. Check that it is shared as “Anyone with the link can view.”"
+      );
+      if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+      scriptEl = null;
+    };
+    document.head.appendChild(scriptEl);
+  }
+
+  load();
+  loadTimer = setInterval(load, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
