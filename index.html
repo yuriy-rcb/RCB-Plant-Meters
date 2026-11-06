@@ -439,8 +439,12 @@
         paid: asNumber(cellVal(c[7])),
         logged: asNumber(cellVal(c[8]))
       };
-      if (/^PLANT\s*TOTAL$/i.test(name)) plant = rec;
-      else depts.push(rec);
+      if (/^PLANT\s*TOTAL$/i.test(name)) {
+        plant = rec;
+        break;
+      }
+      if (typeof rec.eff !== "number") continue;
+      depts.push(rec);
     }
     if (!plant) throw new Error("PLANT TOTAL row not found");
     depts.sort(function (a, b) {
