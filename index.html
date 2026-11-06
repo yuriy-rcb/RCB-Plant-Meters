@@ -31,28 +31,41 @@
     }
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    line-height: 1.35;
+    line-height: 1.2;
   }
   .wrap {
-    max-width: 760px;
+    max-width: 1400px;
+    height: 100vh;
+    height: 100dvh;
     margin: 0 auto;
-    padding: 16px 14px 40px;
+    padding: 6px 12px 4px;
+    display: flex;
+    flex-direction: column;
+  }
+  header { flex: 0 0 auto; }
+  #app {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   header h1 {
-    margin: 0 0 4px;
-    font-size: 1.45rem;
+    margin: 0;
+    font-size: 1.05rem;
     font-weight: 700;
     letter-spacing: -0.02em;
+    line-height: 1.15;
   }
   header .sub {
-    margin: 0 0 18px;
+    margin: 1px 0 6px;
     color: var(--muted);
-    font-size: 0.92rem;
+    font-size: 0.75rem;
   }
   .err {
     display: none;
@@ -68,55 +81,109 @@
     .err { background: #3a1a1a; color: #ffb4b0; border-color: #6a3030; }
   }
   .section-label {
-    margin: 22px 0 10px;
-    font-size: 0.78rem;
+    margin: 5px 0 3px;
+    flex: 0 0 auto;
+    font-size: 0.68rem;
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
   }
   .card {
+    --gauge-h: min(18vh, 160px);
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 14px 12px;
+    border-radius: 10px;
+    padding: 6px 8px 5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    min-width: 0;
   }
-  .card.plant { padding: 16px 16px 14px; }
+  .card.plant {
+    --gauge-h: min(13vh, 132px);
+    flex: 0 0 auto;
+    padding: 7px 10px 6px;
+  }
   .card-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 2px;
+    gap: 8px;
+    margin-bottom: 1px;
   }
   .card-head h2 {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 0.82rem;
     font-weight: 700;
+    min-width: 0;
+    line-height: 1.15;
   }
-  .card.plant .card-head h2 { font-size: 1.2rem; }
+  .card.plant .card-head h2 { font-size: 0.95rem; }
   .status {
-    font-size: 0.78rem;
+    font-size: 0.66rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    flex: 0 0 auto;
   }
   .status.urgent { color: var(--red); }
   .status.watch { color: var(--amber); }
   .status.ontrack { color: var(--green); }
+  .plant-body {
+    display: flex;
+    align-items: center;
+    gap: 4px 14px;
+  }
+  .card.plant .gauge-wrap {
+    flex: 0 0 auto;
+    width: min(38%, calc(var(--gauge-h) * 320 / 168));
+  }
   .gauge-wrap {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    min-width: 0;
+  }
+  .gauge-wrap svg {
+    width: min(100%, calc(var(--gauge-h) * 320 / 168));
+    height: auto;
+    max-height: 100%;
+    display: block;
+    aspect-ratio: 320 / 168;
+  }
+  .grid > .card {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .grid > .card .card-head,
+  .grid > .card .stats,
+  .grid > .card .pct { flex: 0 0 auto; }
+  .grid > .card .gauge-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
     justify-content: center;
-    margin: 2px 0 4px;
   }
-  .gauge-wrap svg { width: 100%; max-width: 320px; height: auto; }
-  .card.plant .gauge-wrap svg { max-width: 380px; }
-  .pct-label {
-    font-size: 36px;
+  .grid > .card .gauge-wrap svg {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: min(var(--gauge-h), 100%);
+  }
+  .pct {
+    margin-top: -0.15em;
     font-weight: 750;
-    fill: var(--text);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    font-size: clamp(13px, 2.35vh, 22px);
+    text-align: center;
   }
+  .card.plant .pct { font-size: clamp(18px, 3.4vh, 32px); }
   .tick-label {
     font-size: 11px;
     fill: var(--muted);
@@ -124,46 +191,112 @@
   }
   .stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 12px;
-    margin-top: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px 8px;
+    margin-top: 2px;
+    width: 100%;
   }
-  .card.plant .stats { grid-template-columns: 1fr 1fr 1fr; }
+  .card.plant .stats {
+    flex: 1 1 auto;
+    margin-top: 0;
+    align-content: center;
+    gap: 5px 12px;
+  }
   .stat {
     background: transparent;
     border-top: 1px solid var(--border);
-    padding-top: 8px;
+    padding-top: 2px;
+    min-width: 0;
   }
   .stat .k {
     display: block;
-    font-size: 0.7rem;
+    font-size: 0.58rem;
     color: var(--muted);
     font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
+    line-height: 1.15;
+    white-space: nowrap;
   }
   .stat .v {
     display: block;
-    font-size: 0.98rem;
+    font-size: 0.78rem;
     font-weight: 700;
-    margin-top: 2px;
+    margin-top: 0;
+    line-height: 1.15;
   }
+  .card.plant .stat .k { font-size: 0.64rem; }
+  .card.plant .stat .v { font-size: 0.92rem; }
   .stat .v.ot-red { color: var(--red); }
   .stat .v.ot-amber { color: var(--amber); }
   .stat .v.ot-green { color: var(--green); }
   .grid {
+    --cols: 3;
+    --rows: round(up, var(--n, 6) / var(--cols), 1);
+    flex: 1 1 auto;
+    min-height: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+    gap: 6px;
   }
-  @media (max-width: 640px) {
-    .grid { grid-template-columns: 1fr; }
-    .card.plant .stats { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 699px) {
+    .grid {
+      --cols: 2;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 459px) {
+    .wrap { height: auto; min-height: 100dvh; }
+    #app { flex: none; }
+    .grid {
+      --cols: 1;
+      flex: none;
+      grid-template-columns: 1fr;
+      grid-template-rows: none;
+    }
+    .grid > .card { height: auto; display: block; }
+    .plant-body { flex-direction: column; align-items: stretch; }
+    .card.plant .gauge-wrap { width: min(100%, 280px); margin: 0 auto; }
+    .card.plant .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-height: 760px) {
+    .wrap { padding: 4px 10px 3px; }
+    header .sub { margin-bottom: 2px; }
+    .section-label { margin: 3px 0 2px; }
+    .card { padding: 4px 6px 3px; }
+    .card.plant { --gauge-h: min(12vh, 112px); padding: 5px 8px 4px; }
+    .grid { gap: 4px; }
+    .stats { gap: 2px 6px; }
+    .stat { padding-top: 1px; }
+    footer { margin-top: 3px; }
+  }
+  @media (max-height: 560px) {
+    .wrap { padding: 2px 8px 2px; }
+    header h1 { font-size: 0.9rem; }
+    header .sub { font-size: 0.66rem; margin: 0 0 1px; }
+    .section-label { margin: 2px 0 1px; font-size: 0.58rem; }
+    .card { padding: 3px 5px 2px; }
+    .card.plant { --gauge-h: min(10vh, 80px); padding: 3px 8px 3px; }
+    .card-head { margin-bottom: 0; }
+    .card-head h2 { font-size: 0.72rem; }
+    .card.plant .card-head h2 { font-size: 0.8rem; }
+    .pct { margin-top: 0; font-size: clamp(12px, 2.4vh, 15px); }
+    .card.plant .pct { font-size: clamp(14px, 2.8vh, 20px); }
+    .stats { gap: 1px 5px; margin-top: 1px; }
+    .stat { padding-top: 1px; }
+    .stat .k { font-size: 0.5rem; line-height: 1.05; }
+    .stat .v { font-size: 0.66rem; line-height: 1.05; }
+    .card.plant .stat .k { font-size: 0.54rem; }
+    .card.plant .stat .v { font-size: 0.74rem; }
+    .grid { gap: 3px; }
+    footer { margin-top: 1px; font-size: 0.58rem; }
   }
   footer {
-    margin-top: 22px;
+    flex: 0 0 auto;
+    margin-top: 4px;
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     text-align: center;
   }
   .loading { color: var(--muted); font-size: 0.92rem; padding: 24px 0; text-align: center; }
@@ -322,7 +455,7 @@
   window.__parsePlant = parsePlant;
   window.__ringSector = ringSector;
 
-  function gaugeSvg(eff, large) {
+  function gaugeSvg(eff) {
     var e = clamp(eff == null ? 0 : eff, 0, 1);
     var red = ringSector(0, 0.6);
     var amber = ringSector(0.6, 0.85);
@@ -333,11 +466,9 @@
     var t0 = polar(CX, CY, R_OUT + 10, 0);
     var t50 = polar(CX, CY, R_OUT + 10, 0.5);
     var t100 = polar(CX, CY, R_OUT + 10, 1);
-    var pctY = CY - 28;
-    var fontSize = large ? 42 : 36;
 
     return (
-      '<svg viewBox="0 0 320 178" role="img" aria-label="Efficiency ' + fmtPct(e) + '">' +
+      '<svg viewBox="0 0 320 168" role="img" aria-label="Efficiency ' + fmtPct(e) + '">' +
         '<path d="' + ringSector(0, 0.5) + '" fill="var(--ring-track)" />' +
         '<path d="' + ringSector(0.5, 1) + '" fill="var(--ring-track)" />' +
         '<path d="' + red + '" fill="var(--red)" />' +
@@ -351,9 +482,6 @@
           '" stroke="var(--needle)" stroke-width="3.5" stroke-linecap="round" />' +
         '<circle cx="' + CX + '" cy="' + CY + '" r="7" fill="var(--hub)" />' +
         '<circle cx="' + CX + '" cy="' + CY + '" r="3.2" fill="var(--card)" />' +
-        '<text class="pct-label" x="' + CX + '" y="' + pctY +
-          '" text-anchor="middle" style="font-size:' + fontSize + 'px">' +
-          fmtPct(e) + "</text>" +
         '<text class="tick-label" x="' + t0.x + '" y="' + (t0.y + 4) + '" text-anchor="middle">0</text>' +
         '<text class="tick-label" x="' + t50.x + '" y="' + (t50.y + 2) + '" text-anchor="middle">50</text>' +
         '<text class="tick-label" x="' + t100.x + '" y="' + (t100.y + 4) + '" text-anchor="middle">100</text>' +
@@ -383,14 +511,21 @@
 
   function cardHtml(rec, isPlant) {
     var sc = statusClass(rec.status);
+    var e = clamp(rec.eff == null ? 0 : rec.eff, 0, 1);
+    var gauge =
+      '<div class="gauge-wrap">' +
+        gaugeSvg(rec.eff) +
+        '<div class="pct">' + fmtPct(e) + "</div>" +
+      "</div>";
+    var body = gauge + statsHtml(rec, isPlant);
+    if (isPlant) body = '<div class="plant-body">' + body + "</div>";
     return (
       '<article class="card' + (isPlant ? " plant" : "") + '">' +
         '<div class="card-head">' +
           "<h2>" + escapeHtml(rec.dept) + "</h2>" +
           '<span class="status ' + sc + '">' + escapeHtml(rec.status) + "</span>" +
         "</div>" +
-        '<div class="gauge-wrap">' + gaugeSvg(rec.eff, isPlant) + "</div>" +
-        statsHtml(rec, isPlant) +
+        body +
       "</article>"
     );
   }
@@ -408,7 +543,7 @@
     sub.textContent = data.week || "Plant efficiency";
     var html = cardHtml(data.plant, true);
     html += '<div class="section-label">Departments</div>';
-    html += '<div class="grid">';
+    html += '<div class="grid" style="--n:' + (data.depts.length || 1) + '">';
     for (var i = 0; i < data.depts.length; i++) {
       html += cardHtml(data.depts[i], false);
     }
